@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js">
+    </script>
+    <script type="text/javascript">
+        $(function () {
+            let conn = null;
+            let timerId = null;
+
+            connect();
+            function log(msg) {
+                let control = $('#news');
+
+                control.html(control.html() + `<h4>${msg.header}</h4><p>${msg.body}</p>`);
+            }
+            function connect() {
+                disconnect();
+                let wsUri = (window.location.protocol === 'https:'&&'wss://'||'ws://') + window.location.host;
+                conn = new WebSocket(wsUri)
+                console.log('Connecting')
+                conn.onopen = function () {
+                    console.log('Connected');
+                    timerId = setInterval(() => conn.send('PING'), 5000)
+                    update_ui();
+                };
+                conn.onmessage = function (e) {
+                    console.log(e.data);
+                    if (e.data === 'PONG') {
+                        console.log('PONG received')
+                    } else {
+                        log(JSON.parse(e.data))
+                    }
+                }
+                conn.onclose = function () {
+                    console.log('Disconnected')
+                    conn = null;
+                    if (timerId != null) {
+                        clearInterval(timerId);
+                        timerId = null;
+                    }
+                    update_ui();
+                }
+            }
+            function disconnect() {
+                if (conn != null) {
+                    console.log('Disconnecting')
+                    conn.close();
+                    conn = null;
+                    update_ui();
+                }
+            }
+            function update_ui() {
+                if (conn == null) {
+                    let control = $('#news');
+                    control.html("Disconnected");
+                }
+            }
+        })
+    </script>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h3>Новости</h3>
+    <div id="news">
+
+    </div>
+</body>
+</html>
